@@ -1,3 +1,121 @@
+# Netflix Clone
+
+A React Native Netflix clone application with trailer preview functionality and profile management.
+
+## Features
+
+### Authentication & Profiles
+- User login/signup system
+- Profile management (max 3 profiles)
+- Profile switching
+- Profile customization (avatar, name)
+
+### Movie Browsing
+- Home screen with categorized movies
+- Trending section
+- Categories (Movies, TV Shows, My List)
+- Search functionality
+- Hover preview with auto-playing trailers
+- Full-screen trailer playback on click
+
+### UI/UX
+- Dark theme throughout the app
+- Smooth animations and transitions
+- Netflix-style card layout
+- Responsive design for all screen sizes
+
+### Movie Details
+- Movie/Show information
+- Cast information
+- Similar recommendations
+- Add to My List functionality
+- Share functionality
+
+## Project Structure
+
+```
+src/
+├── screens/              
+│   ├── auth/            # Login, Signup screens
+│   ├── profile/         # Profile selection, management
+│   ├── browse/          # Main browsing screens
+│   └── details/         # Movie detail screens
+├── components/        
+│   ├── shared/          # Reusable components
+│   │   ├── buttons/
+│   │   ├── cards/
+│   │   └── layout/
+│   └── screen-specific/ # Screen-specific components
+├── navigation/          # Navigation configuration
+├── services/           
+│   ├── auth/           # Authentication services
+│   ├── api/            # Movie API integration
+│   └── youtube/        # YouTube API for trailers
+├── hooks/              # Custom React hooks
+├── constants/          
+│   ├── theme.ts        # Dark theme configuration
+│   └── api.ts          # API endpoints
+├── utils/              # Helper functions
+├── assets/             # Images, icons
+└── types/              # TypeScript definitions
+```
+
+## Tech Stack
+
+- React Native
+- TypeScript
+- React Navigation
+- Expo
+- Firebase (Authentication)
+- TMDB API (Movie data)
+- YouTube API (Trailers)
+- Styled Components
+
+## Required APIs
+1. TMDB API - For movie data and information
+2. YouTube API - For movie trailers
+3. Firebase - For authentication and profile management
+
+## Getting Started
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Set up environment variables:
+Create a `.env` file with:
+```
+TMDB_API_KEY=your_tmdb_api_key
+YOUTUBE_API_KEY=your_youtube_api_key
+FIREBASE_CONFIG=your_firebase_config
+```
+
+3. Run the development server:
+```bash
+npm start
+```
+
+## Screens Flow
+
+1. **Authentication Flow**
+   - Login Screen
+   - Signup Screen
+   - Profile Selection Screen
+   - Profile Management Screen
+
+2. **Main Flow**
+   - Home Screen (Browse)
+   - Category Screens
+   - Search Screen
+   - Movie Details Screen
+   - Full-screen Trailer Player
+
+3. **Profile Flow**
+   - Profile Selection
+   - Profile Edit
+   - Profile Creation
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
