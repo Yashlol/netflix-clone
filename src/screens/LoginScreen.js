@@ -245,9 +245,11 @@ export default function LoginScreen({ navigation }) {
 
     try {
       setLoading(true);
+      console.log('Attempting login...');
       const { user } = await authService.signIn(email, password);
       
       if (user) {
+        console.log('Login successful, user:', user.id);
         if (!user.email_confirmed_at) {
           Alert.alert(
             'Email Not Verified',
@@ -263,9 +265,24 @@ export default function LoginScreen({ navigation }) {
           );
           return;
         }
+        console.log('Setting user in context...');
         setUser(user);
+        console.log('Attempting navigation to MovieDetail...');
+        
+        // Try direct navigation first
+        navigation.navigate('MovieDetail');
+        
+        // If that doesn't work, try resetting the stack
+        setTimeout(() => {
+          console.log('Attempting navigation reset...');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MovieDetail' }],
+          });
+        }, 100);
       }
     } catch (error) {
+      console.error('Login error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);

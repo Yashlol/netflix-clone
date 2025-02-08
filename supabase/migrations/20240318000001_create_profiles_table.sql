@@ -16,6 +16,11 @@ create index if not exists profiles_username_idx on profiles(username);
 -- Enable RLS
 alter table profiles enable row level security;
 
+-- Drop existing policies if they exist
+drop policy if exists "Users can view their own profiles" on profiles;
+drop policy if exists "Users can insert their own profiles" on profiles;
+drop policy if exists "Users can update their own profiles" on profiles;
+
 -- Create policies
 create policy "Users can view their own profiles"
     on profiles for select
@@ -27,4 +32,4 @@ create policy "Users can insert their own profiles"
 
 create policy "Users can update their own profiles"
     on profiles for update
-    using (auth.uid() = user_id); 
+    using (auth.uid() = user_id);

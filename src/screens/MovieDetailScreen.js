@@ -1,8 +1,46 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { theme } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/auth';
+import { useNavigation } from '@react-navigation/native';
+
+const LogoutButton = () => {
+  const { setUser } = useAuth();
+  const navigation = useNavigation();
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      style={styles.logoutButton}
+      onPress={handleLogout}
+    >
+      <Text style={styles.logoutButtonText}>Logout</Text>
+    </TouchableOpacity>
+  );
+};
 
 const MovieDetailScreen = () => {
+  const navigation = useNavigation();
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <LogoutButton />,
+    });
+  }, [navigation]);
+
   // Dummy data - replace with actual movie data later
   const movie = {
     title: "Sample Movie",
@@ -139,6 +177,14 @@ const styles = StyleSheet.create({
   genreText: {
     color: theme.colors.text.primary,
     fontSize: theme.typography.fontSize.sm,
+  },
+  logoutButton: {
+    marginRight: theme.spacing.md,
+    padding: theme.spacing.sm,
+  },
+  logoutButtonText: {
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.md,
   },
 });
 

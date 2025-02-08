@@ -19,6 +19,11 @@ create unique index if not exists watchlist_unique_movie_idx
 -- Enable RLS
 alter table watchlist enable row level security;
 
+-- Drop existing policies if they exist
+drop policy if exists "Users can view their own watchlist" on watchlist;
+drop policy if exists "Users can insert into their own watchlist" on watchlist;
+drop policy if exists "Users can delete from their own watchlist" on watchlist;
+
 -- Create policies
 create policy "Users can view their own watchlist"
     on watchlist for select
@@ -30,4 +35,7 @@ create policy "Users can insert into their own watchlist"
 
 create policy "Users can delete from their own watchlist"
     on watchlist for delete
-    using (auth.uid() = user_id); 
+    using (auth.uid() = user_id);
+
+create unique index if not exists watchlist_unique_movie_idx 
+    on watchlist(user_id, profile_id, movie_id);

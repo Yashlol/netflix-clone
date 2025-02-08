@@ -18,6 +18,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function NavigationContent() {
   const { user, loading } = useAuth();
+  console.log('Current auth state:', { user: user?.id, loading });
 
   if (loading) {
     return (
@@ -34,7 +35,6 @@ function NavigationContent() {
 
   return (
     <Stack.Navigator
-      initialRouteName={user ? "Home" : "Login"}
       screenOptions={{
         headerStyle: {
           backgroundColor: theme.colors.background.primary,
@@ -54,14 +54,27 @@ function NavigationContent() {
       ) : (
         <>
           <Stack.Screen
+            name="MovieDetail"
+            component={MovieDetailScreen}
+            options={{ 
+              title: "Netflix",
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: theme.colors.background.primary,
+                minHeight: 80,
+              },
+              headerTitleStyle: {
+                color: theme.colors.primary,
+                fontSize: 24,
+                fontWeight: 'bold',
+              },
+              headerTintColor: theme.colors.text.primary,
+            }}
+          />
+          <Stack.Screen
             name="Home"
             component={HomeScreen}
             options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="MovieDetail"
-            component={MovieDetailScreen}
-            options={{ title: "" }}
           />
         </>
       )}
