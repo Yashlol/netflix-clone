@@ -27,4 +27,37 @@ export type ContinueWatching = {
   movie_id: number;
   progress: number;
   last_watched: string;
+};
+
+export type Movie = {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string;
+  backdrop_path: string;
+  release_date: string;
+  vote_average: number;
+  genre_ids: number[];
+};
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'id' | 'created_at'>;
+        Update: Partial<Omit<Profile, 'id' | 'created_at'>>;
+      };
+      watchlist: {
+        Row: WatchList;
+        Insert: Omit<WatchList, 'id' | 'added_at'>;
+        Update: Partial<Omit<WatchList, 'id' | 'added_at'>>;
+      };
+      continue_watching: {
+        Row: ContinueWatching;
+        Insert: Omit<ContinueWatching, 'id' | 'last_watched'>;
+        Update: Partial<Omit<ContinueWatching, 'id' | 'last_watched'>>;
+      };
+    };
+  };
 }; 
