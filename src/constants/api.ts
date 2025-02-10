@@ -10,10 +10,17 @@ export const API_CONFIG = {
       MOVIE_DETAILS: '/movie',
       TV_DETAILS: '/tv'
     },
-    IMAGE_SIZES: {
-      POSTER: 'w500',
-      BACKDROP: 'original',
-      PROFILE: 'w185'
+    POSTER_SIZES: {
+      SMALL: 'w185',
+      MEDIUM: 'w342',
+      LARGE: 'w500',
+      ORIGINAL: 'original'
+    },
+    BACKDROP_SIZES: {
+      SMALL: 'w300',
+      MEDIUM: 'w780',
+      LARGE: 'w1280',
+      ORIGINAL: 'original'
     }
   },
   YOUTUBE: {

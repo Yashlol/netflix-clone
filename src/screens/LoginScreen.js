@@ -18,37 +18,78 @@ import { theme } from '../constants/theme';
 import { NetflixLogo } from '../components/shared/NetflixLogo';
 import { useAuth } from '../contexts/AuthContext';
 
-// Move SignUpModal outside the main component
 const SignUpModal = ({ visible, onClose, onSignUp, loading, formData, onFormChange }) => {
   const slideAnimation = useRef(new Animated.Value(0)).current;
   const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const [errors, setErrors] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  // Validate form fields as user types
+  const validateField = (field, value) => {
+    let error = '';
+    switch (field) {
+      case 'username':
+        if (value && value.length < 3) {
+          error = 'Username must be at least 3 characters';
+        }
+        break;
+      case 'email':
+        if (value && !/\S+@\S+\.\S+/.test(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'password':
+        if (value) {
+          if (value.length < 6) {
+            error = 'Password must be at least 6 characters';
+          } else if (!/^[a-zA-Z0-9]+$/.test(value)) {
+            error = 'Password can only contain letters and numbers';
+          } else if (!/(?=.*[0-9])(?=.*[a-zA-Z])/.test(value)) {
+            error = 'Password must contain both letters and numbers';
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (value && value !== formData.password) {
+          error = 'Passwords do not match';
+        }
+        break;
+    }
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  // Handle form changes with validation
+  const handleFieldChange = (field, value) => {
+    onFormChange(field, value);
+    validateField(field, value);
+  };
 
   useEffect(() => {
     if (visible) {
-      Animated.sequence([
+      // Reset animations and errors when modal becomes visible
+      slideAnimation.setValue(0);
+      fadeAnimation.setValue(0);
+      setErrors({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+      
+      Animated.parallel([
         Animated.timing(slideAnimation, {
           toValue: 1,
           duration: 300,
-          delay: 100,
           useNativeDriver: true,
           easing: Easing.out(Easing.ease),
         }),
         Animated.timing(fadeAnimation, {
           toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnimation, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnimation, {
-          toValue: 0,
-          duration: 200,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start();
@@ -60,92 +101,109 @@ const SignUpModal = ({ visible, onClose, onSignUp, loading, formData, onFormChan
     outputRange: [600, 0],
   });
 
+  if (!visible) return null;
+
   return (
     <Modal
       animationType="none"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
-      <Animated.View 
-        style={[
-          styles.modalContainer,
-          {
-            opacity: fadeAnimation,
-            transform: [{ translateY }],
-          }
-        ]}
-      >
-        <ScrollView contentContainerStyle={styles.modalContent}>
-          <Text style={styles.modalTitle}>Create Account</Text>
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={formData.username}
-            onChangeText={(text) => onFormChange('username', text)}
-            autoCapitalize="none"
-            editable={!loading}
-          />
+      <View style={[styles.modalOverlay, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}>
+        <Animated.View 
+          style={[
+            styles.modalContainer,
+            {
+              opacity: fadeAnimation,
+              transform: [{ translateY }],
+            }
+          ]}
+        >
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Account</Text>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, errors.username ? styles.inputError : null]}
+                placeholder="Username"
+                placeholderTextColor={theme.colors.text.tertiary}
+                value={formData.username}
+                onChangeText={(text) => handleFieldChange('username', text)}
+                autoCapitalize="none"
+                editable={!loading}
+              />
+              {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={formData.email}
-            onChangeText={(text) => onFormChange('email', text)}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, errors.email ? styles.inputError : null]}
+                placeholder="Email"
+                placeholderTextColor={theme.colors.text.tertiary}
+                value={formData.email}
+                onChangeText={(text) => handleFieldChange('email', text)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+              />
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={formData.password}
-            onChangeText={(text) => onFormChange('password', text)}
-            secureTextEntry
-            editable={!loading}
-          />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, errors.password ? styles.inputError : null]}
+                placeholder="Password (letters and numbers only)"
+                placeholderTextColor={theme.colors.text.tertiary}
+                value={formData.password}
+                onChangeText={(text) => handleFieldChange('password', text)}
+                secureTextEntry
+                editable={!loading}
+              />
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+            </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={formData.confirmPassword}
-            onChangeText={(text) => onFormChange('confirmPassword', text)}
-            secureTextEntry
-            editable={!loading}
-          />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, errors.confirmPassword ? styles.inputError : null]}
+                placeholder="Confirm Password"
+                placeholderTextColor={theme.colors.text.tertiary}
+                value={formData.confirmPassword}
+                onChangeText={(text) => handleFieldChange('confirmPassword', text)}
+                secureTextEntry
+                editable={!loading}
+              />
+              {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
+            </View>
 
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={onSignUp}
-            disabled={loading}
-          >
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator color={theme.colors.text.primary} />
-                <Text style={[styles.buttonText, styles.loadingText]}>
-                  {loading ? 'Creating Account...' : 'Sign Up'}
-                </Text>
-    </View>
-            ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.button}
+              onPress={onSignUp}
+              disabled={loading || Object.values(errors).some(error => error !== '')}
+            >
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={theme.colors.text.primary} />
+                  <Text style={[styles.buttonText, styles.loadingText]}>
+                    Creating Account...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Sign Up</Text>
+              )}
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onClose}
-            disabled={loading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </Animated.View>
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={onClose}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
@@ -270,7 +328,7 @@ export default function LoginScreen({ navigation }) {
         console.log('Attempting navigation to MovieDetail...');
         
         // Try direct navigation first
-        navigation.navigate('MovieDetail');
+        navigation.navigate('MovieDetailScreen');
         
         // If that doesn't work, try resetting the stack
         setTimeout(() => {
@@ -303,6 +361,13 @@ export default function LoginScreen({ navigation }) {
 
     if (signUpForm.password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    // Check if password contains only letters and numbers
+    const passwordRegex = /^[a-zA-Z0-9]+$/;
+    if (!passwordRegex.test(signUpForm.password)) {
+      Alert.alert('Error', 'Password can only contain letters and numbers');
       return;
     }
 
@@ -430,7 +495,10 @@ export default function LoginScreen({ navigation }) {
 
         <TouchableOpacity 
           style={styles.signUpButton}
-          onPress={() => setShowSignUp(true)}
+          onPress={() => {
+            console.log('Sign up button pressed');
+            setShowSignUp(true);
+          }}
           disabled={loading || verificationLoading}
         >
           <Text style={styles.signUpText}>New to Netflix? Sign up now</Text>
@@ -439,7 +507,10 @@ export default function LoginScreen({ navigation }) {
 
       <SignUpModal 
         visible={showSignUp}
-        onClose={() => !loading && setShowSignUp(false)}
+        onClose={() => {
+          console.log('Closing modal');
+          setShowSignUp(false);
+        }}
         onSignUp={handleSignUp}
         loading={loading}
         formData={signUpForm}
@@ -458,17 +529,9 @@ export default function LoginScreen({ navigation }) {
           <Animated.View style={{ transform: [{ rotate: spin }] }}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </Animated.View>
-          <Animated.Text 
-            style={[
-              styles.verificationText,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: formTranslateY }],
-              }
-            ]}
-          >
+          <Text style={styles.verificationText}>
             Sending verification email...
-          </Animated.Text>
+          </Text>
         </Animated.View>
       )}
     </Animated.View>
@@ -521,13 +584,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.fontSize.md,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: theme.colors.background.primary,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    maxHeight: '80%',
   },
   modalContent: {
     padding: theme.spacing.lg,
-    paddingTop: theme.spacing['2xl'],
   },
   modalTitle: {
     color: theme.colors.text.primary,
@@ -563,5 +635,17 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
+  },
+  inputContainer: {
+    marginBottom: theme.spacing.md,
+  },
+  inputError: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: theme.typography.fontSize.sm,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
