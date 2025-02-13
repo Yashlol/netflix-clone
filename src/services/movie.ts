@@ -1,68 +1,95 @@
 import { TMDB_API_KEY } from '@env';
 import { API_CONFIG } from '../constants/api';
+import { Movie } from '../types/supabase';
 
 const BASE_URL = API_CONFIG.TMDB.BASE_URL;
-const API_KEY = TMDB_API_KEY;
-
-export type Movie = {
-  id: number;
-  title: string;
-  name?: string; // For TV shows
-  overview: string;
-  poster_path: string;
-  backdrop_path: string;
-  release_date?: string;
-  first_air_date?: string; // For TV shows
-  vote_average: number;
-  genre_ids: number[];
-  media_type?: string;
-};
+const IMAGE_BASE_URL = API_CONFIG.TMDB.IMAGE_BASE_URL;
 
 export const movieService = {
-  async getTrending(): Promise<Movie[]> {
+  async getMovieDetails(movieId: number): Promise<Movie> {
     const response = await fetch(
-      `${BASE_URL}/trending/all/week?api_key=${API_KEY}`
+      `${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US`
     );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch movie details');
+    }
+
     const data = await response.json();
-    return data.results;
+    return {
+      id: data.id,
+      title: data.title,
+      overview: data.overview,
+      poster_path: `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.POSTER}${data.poster_path}`,
+      backdrop_path: `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.BACKDROP}${data.backdrop_path}`,
+      release_date: data.release_date,
+      vote_average: data.vote_average,
+      genre_ids: data.genres.map((genre: any) => genre.id),
+    };
   },
 
-  async getMovieDetails(id: number): Promise<Movie> {
+  async getSimilarMovies(movieId: number): Promise<Movie[]> {
     const response = await fetch(
-      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&append_to_response=videos,similar`
+      `${BASE_URL}/movie/${movieId}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
     );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch similar movies');
+    }
+
     const data = await response.json();
-    return data;
+    return data.results.map((movie: any) => ({
+      id: movie.id,
+      title: movie.title,
+      overview: movie.overview,
+      poster_path: movie.poster_path ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.POSTER}${movie.poster_path}` : null,
+      backdrop_path: movie.backdrop_path ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.BACKDROP}${movie.backdrop_path}` : null,
+      release_date: movie.release_date,
+      vote_average: movie.vote_average,
+      genre_ids: movie.genre_ids,
+    }));
   },
 
-  async getSimilarMovies(id: number): Promise<Movie[]> {
+  async getTrendingMovies(): Promise<Movie[]> {
     const response = await fetch(
-      `${BASE_URL}/movie/${id}/similar?api_key=${API_KEY}`
+      `${BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}&language=en-US`
     );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch trending movies');
+    }
+
     const data = await response.json();
-    return data.results;
+    return data.results.map((movie: any) => ({
+      id: movie.id,
+      title: movie.title,
+      overview: movie.overview,
+      poster_path: movie.poster_path ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.POSTER}${movie.poster_path}` : null,
+      backdrop_path: movie.backdrop_path ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.BACKDROP}${movie.backdrop_path}` : null,
+      release_date: movie.release_date,
+      vote_average: movie.vote_average,
+      genre_ids: movie.genre_ids,
+    }));
   },
 
-  async searchMovies(query: string): Promise<Movie[]> {
+  async getMovieTrailer(movieId: number): Promise<string | null> {
     const response = await fetch(
-      `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`
+      `${BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}&language=en-US`
     );
-    const data = await response.json();
-    return data.results;
-  },
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch movie videos');
+    }
 
-  getImageUrl(path: string, size: string = 'original'): string {
-    return `${API_CONFIG.TMDB.IMAGE_BASE_URL}/${size}${path}`;
-  },
-
-  async getMovieTrailer(id: number): Promise<string | null> {
-    const response = await fetch(
-      `${BASE_URL}/movie/${id}/videos?api_key=${API_KEY}`
-    );
     const data = await response.json();
-    const trailer = data.results.find(
-      (video: any) => video.type === 'Trailer' && video.site === 'YouTube'
-    );
-    return trailer ? trailer.key : null;
+    
+    // Find the official trailer, teaser, or any video
+    const video = data.results.find((v: any) => 
+      v.type === 'Trailer' && v.site === 'YouTube'
+    ) || data.results.find((v: any) => 
+      v.type === 'Teaser' && v.site === 'YouTube'
+    ) || data.results[0];
+
+    return video ? `https://www.youtube.com/watch?v=${video.key}` : null;
   },
 }; 

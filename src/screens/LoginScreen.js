@@ -203,7 +203,7 @@ const SignUpModal = ({ visible, onClose, onSignUp, loading, formData, onFormChan
             </TouchableOpacity>
           </ScrollView>
         </Animated.View>
-      </View>
+    </View>
     </Modal>
   );
 };
