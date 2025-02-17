@@ -57,7 +57,7 @@ function NavigationContent() {
             name="MovieDetail"
             component={MovieDetailScreen}
             options={{ 
-              title: "Netflix",
+              title: "Alanwatch",
               headerShown: true,
               headerStyle: {
                 backgroundColor: theme.colors.background.primary,
@@ -67,6 +67,7 @@ function NavigationContent() {
                 color: theme.colors.primary,
                 fontSize: 24,
                 fontWeight: 'bold',
+                letterSpacing: 1,
               },
               headerTintColor: theme.colors.text.primary,
             }}

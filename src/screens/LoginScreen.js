@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { authService } from '../services/auth';
 import { theme } from '../constants/theme';
-import { NetflixLogo } from '../components/shared/NetflixLogo';
+import { BrandLogo } from '../components/shared/NetflixLogo';
 import { useAuth } from '../contexts/AuthContext';
 
 const SignUpModal = ({ visible, onClose, onSignUp, loading, formData, onFormChange }) => {
@@ -84,13 +84,13 @@ const SignUpModal = ({ visible, onClose, onSignUp, loading, formData, onFormChan
         Animated.timing(slideAnimation, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
           easing: Easing.out(Easing.ease),
         }),
         Animated.timing(fadeAnimation, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }
@@ -226,24 +226,51 @@ export default function LoginScreen({ navigation }) {
   const formSlideAnim = useRef(new Animated.Value(0)).current;
   const loadingSpinAnim = useRef(new Animated.Value(0)).current;
 
+  // Initial mount animation
   useEffect(() => {
-    // Initial animations
-    Animated.sequence([
+    // Initial animation when component mounts
+    fadeAnim.setValue(0);
+    formSlideAnim.setValue(0);
+
+    Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 500,
-        delay: 300,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(formSlideAnim, {
         toValue: 1,
         duration: 500,
-        useNativeDriver: true,
+        useNativeDriver: false,
         easing: Easing.out(Easing.ease),
       }),
     ]).start();
-  }, []);
+  }, []); // Run only on mount
 
+  // Handle modal visibility changes
+  useEffect(() => {
+    if (!showSignUp) {
+      // When modal closes, animate form back in
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(formSlideAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.ease),
+        }),
+      ]).start();
+    } else {
+      // When modal opens, hide form
+      fadeAnim.setValue(0);
+    }
+  }, [showSignUp]);
+
+  // Update the loading spin animation
   useEffect(() => {
     if (loading || verificationLoading) {
       Animated.loop(
@@ -251,13 +278,13 @@ export default function LoginScreen({ navigation }) {
           Animated.timing(loadingSpinAnim, {
             toValue: 1,
             duration: 1000,
-            useNativeDriver: true,
+            useNativeDriver: false,
             easing: Easing.linear,
           }),
           Animated.timing(loadingSpinAnim, {
             toValue: 0,
             duration: 0,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ])
       ).start();
@@ -431,20 +458,16 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleCloseSignUp = () => {
+    console.log('Closing modal');
+    setShowSignUp(false);
+  };
+
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <Animated.View style={[{ opacity: fadeAnim }]}>
-        {logoError ? (
-          <NetflixLogo style={styles.logo} />
-        ) : (
-          <Image
-            source={require('../assets/images/netflix-logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-            onError={() => setLogoError(true)}
-          />
-        )}
-      </Animated.View>
+    <View style={styles.container}>
+      <View style={styles.logoContainer}>
+        <BrandLogo style={styles.logo} />
+      </View>
       
       <Animated.View 
         style={[
@@ -501,16 +524,13 @@ export default function LoginScreen({ navigation }) {
           }}
           disabled={loading || verificationLoading}
         >
-          <Text style={styles.signUpText}>New to Netflix? Sign up now</Text>
+          <Text style={styles.signUpText}>New to site? Sign up now</Text>
         </TouchableOpacity>
       </Animated.View>
 
       <SignUpModal 
         visible={showSignUp}
-        onClose={() => {
-          console.log('Closing modal');
-          setShowSignUp(false);
-        }}
+        onClose={handleCloseSignUp}
         onSignUp={handleSignUp}
         loading={loading}
         formData={signUpForm}
@@ -534,7 +554,7 @@ export default function LoginScreen({ navigation }) {
           </Text>
         </Animated.View>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
@@ -544,12 +564,15 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
     padding: theme.spacing.lg,
   },
-  logo: {
-    width: 150,
-    height: 80,
-    alignSelf: 'center',
+  logoContainer: {
+    width: '100%',
+    alignItems: 'center',
     marginTop: theme.spacing['2xl'],
     marginBottom: theme.spacing.xl,
+  },
+  logo: {
+    fontSize: 48,
+    alignSelf: 'center',
   },
   formContainer: {
     width: '100%',

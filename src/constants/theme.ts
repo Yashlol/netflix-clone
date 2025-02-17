@@ -1,36 +1,44 @@
 export const theme = {
   colors: {
     // Primary colors
-    primary: '#E50914', // Netflix Red
+    primary: '#00A8E1', // Prime Video Blue
     secondary: '#FFFFFF',
     
     // Background colors
     background: {
-      primary: '#000000',
-      secondary: '#141414',
-      card: '#181818',
-      overlay: 'rgba(0, 0, 0, 0.7)'
+      primary: '#0F171E', // Dark blue-black
+      secondary: '#1A242F', // Slightly lighter blue-black
+      card: '#1B2530', // Card background
+      overlay: 'rgba(15, 23, 30, 0.9)' // Overlay with blue tint
     },
     
     // Text colors
     text: {
       primary: '#FFFFFF',
-      secondary: '#E5E5E5',
-      tertiary: '#6E6E6E'
+      secondary: '#8197A4', // Prime's secondary text
+      tertiary: '#637A87' // Prime's tertiary text
     },
 
     // Status colors
-    success: '#46D369',
-    error: '#E50914',
-    warning: '#F5B014'
+    success: '#3EB489', // Softer green
+    error: '#FF6B6B', // Soft red
+    warning: '#FFC107', // Amber
+    
+    // Prime specific colors
+    accent: {
+      blue: '#00A8E1', // Primary blue
+      lightBlue: '#69C9E5', // Lighter blue for hover
+      darkBlue: '#0084B4', // Darker blue for active states
+      gold: '#FBB829' // Prime gold for special elements
+    }
   },
 
   // Typography
   typography: {
     fontFamily: {
-      regular: 'NetflixSans-Regular',
-      medium: 'NetflixSans-Medium',
-      bold: 'NetflixSans-Bold'
+      regular: 'System',
+      medium: 'System',
+      bold: 'System'
     },
     fontSize: {
       xs: 12,
@@ -55,10 +63,10 @@ export const theme = {
 
   // Border Radius
   borderRadius: {
-    sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16
+    sm: 2, // Prime uses smaller radius
+    md: 4,
+    lg: 6,
+    xl: 8
   },
 
   // Shadows

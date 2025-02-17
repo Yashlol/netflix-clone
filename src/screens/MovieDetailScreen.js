@@ -11,7 +11,9 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Animated,
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth';
@@ -19,7 +21,7 @@ import { movieService } from '../services/movie';
 import { watchlistService } from '../services/watchlist';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { NetflixLogo } from '../components/shared/NetflixLogo';
+import { BrandLogo } from '../components/shared/NetflixLogo';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -65,9 +67,89 @@ const HeaderLeft = () => {
         style={styles.homeButton}
         onPress={() => navigation.navigate('Home')}
       >
-        <NetflixLogo style={styles.headerLogo} />
+        <BrandLogo style={styles.headerLogo} />
       </TouchableOpacity>
     </View>
+  );
+};
+
+const MovieItem = ({ movie, onPress, style }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const scaleAnim = useState(new Animated.Value(1))[0];
+  const opacityAnim = useState(new Animated.Value(0))[0];
+
+  const handleHoverIn = () => {
+    setIsHovered(true);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1.1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleHoverOut = () => {
+    setIsHovered(false);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onHoverIn={handleHoverIn}
+      onHoverOut={handleHoverOut}
+      style={[styles.movieItemContainer, style]}
+      activeOpacity={0.9}
+    >
+      <Animated.View
+        style={[
+          styles.movieItemInner,
+          {
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <Image
+          source={{ uri: movie.poster_path }}
+          style={styles.similarImage}
+          resizeMode="cover"
+        />
+        <Animated.View
+          style={[
+            styles.movieItemOverlay,
+            {
+              opacity: opacityAnim,
+            },
+          ]}
+        >
+          <View style={styles.movieItemContent}>
+            <Text style={styles.movieItemTitle} numberOfLines={2}>{movie.title}</Text>
+            <Text style={styles.movieItemYear}>
+              {new Date(movie.release_date).getFullYear()}
+            </Text>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 
@@ -82,22 +164,16 @@ const MovieDetailScreen = ({ route }) => {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
 
-  // Use a default movieId for testing if none is provided
   const movieId = route?.params?.movieId || 550;
 
+  // Fetch watchlist movies
   const fetchWatchlistMovies = async () => {
     try {
       if (!user) return;
       
-      console.log('Fetching watchlist for user:', user.id);
       const watchlist = await watchlistService.getWatchlist(user.id, user.id);
-      console.log('Watchlist items:', watchlist);
-      
-      const moviePromises = watchlist.map(item => 
-        movieService.getMovieDetails(item.movie_id)
-      );
-      const movies = await Promise.all(moviePromises);
-      console.log('Watchlist movies details:', movies);
+      const movieIds = watchlist.map(item => item.movie_id);
+      const movies = await movieService.getMultipleMovieDetails(movieIds);
       setWatchlistMovies(movies);
     } catch (error) {
       console.error('Error fetching watchlist:', error);
@@ -108,31 +184,47 @@ const MovieDetailScreen = ({ route }) => {
     const fetchMovieData = async () => {
       try {
         setLoading(true);
-        console.log('Fetching movie data for ID:', movieId);
+        setError(null);
+
+        if (!navigator.onLine) {
+          throw new Error('No internet connection. Please check your network and try again.');
+        }
+
         const [movieData, similarMoviesData] = await Promise.all([
           movieService.getMovieDetails(movieId),
           movieService.getSimilarMovies(movieId)
         ]);
         
+        if (!movieData) {
+          throw new Error('Failed to load movie details. Please try again.');
+        }
+
         setMovie(movieData);
         setSimilarMovies(similarMoviesData.slice(0, 10));
 
-        // Check if movie is in watchlist
+        // Check if movie is in watchlist and fetch watchlist movies
         if (user) {
-          console.log('Checking if movie is in watchlist');
-          const inWatchlist = await watchlistService.isInWatchlist(
-            user.id,
-            user.id,
-            movieId
-          );
-          console.log('Is movie in watchlist:', inWatchlist);
-          setIsInWatchlist(inWatchlist);
-          // Fetch watchlist movies
-          await fetchWatchlistMovies();
+          try {
+            const [inWatchlist] = await Promise.all([
+              watchlistService.isInWatchlist(user.id, user.id, movieId),
+              fetchWatchlistMovies()
+            ]);
+            setIsInWatchlist(inWatchlist);
+          } catch (watchlistError) {
+            console.error('Error fetching watchlist:', watchlistError);
+          }
         }
       } catch (err) {
         console.error('Error fetching movie data:', err);
-        setError(err.message);
+        setError(err.message || 'Failed to load movie data. Please try again.');
+        Alert.alert(
+          'Error',
+          err.message || 'Failed to load movie data. Please try again.',
+          [
+            { text: 'Retry', onPress: () => fetchMovieData() },
+            { text: 'Go Back', onPress: () => navigation.goBack(), style: 'cancel' }
+          ]
+        );
       } finally {
         setLoading(false);
       }
@@ -164,56 +256,21 @@ const MovieDetailScreen = ({ route }) => {
     try {
       setWatchlistLoading(true);
       if (isInWatchlist) {
-        await watchlistService.removeFromWatchlist(
-          user.id,
-          user.id,
-          movieId
-        );
+        await watchlistService.removeFromWatchlist(user.id, user.id, movieId);
         setIsInWatchlist(false);
-        // Remove movie from watchlist movies
-        setWatchlistMovies(prev => prev.filter(m => m.id !== movieId));
-        Alert.alert('Success', 'Movie removed from watchlist');
       } else {
-        await watchlistService.addToWatchlist(
-          user.id,
-          user.id,
-          movieId
-        );
+        await watchlistService.addToWatchlist(user.id, user.id, movieId);
         setIsInWatchlist(true);
-        // Add current movie to watchlist movies
-        if (movie) {
-          setWatchlistMovies(prev => [...prev, movie]);
-        }
-        Alert.alert('Success', 'Movie added to watchlist');
       }
-      // Refresh watchlist after adding/removing
+      // Refresh watchlist movies after adding/removing
       await fetchWatchlistMovies();
     } catch (error) {
       console.error('Error updating watchlist:', error);
-      Alert.alert('Error', 'Failed to update watchlist');
+      Alert.alert('Error', error.message || 'Failed to update watchlist');
     } finally {
       setWatchlistLoading(false);
     }
   };
-
-  // Add this function to refresh the watchlist
-  const refreshWatchlist = async () => {
-    if (!user) return;
-    try {
-      await fetchWatchlistMovies();
-    } catch (error) {
-      console.error('Error refreshing watchlist:', error);
-    }
-  };
-
-  // Add useEffect to refresh watchlist when the screen comes into focus
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      refreshWatchlist();
-    });
-
-    return unsubscribe;
-  }, [navigation, user]);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -248,9 +305,8 @@ const MovieDetailScreen = ({ route }) => {
   if (!movie) return null;
 
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
-  const rating = 'TV-MA'; // You might want to fetch this from a different API
-  const duration = '2h 15m'; // You might want to fetch this from a different API
-  const matchPercentage = Math.round(movie.vote_average * 10);
+  const rating = 'TV-MA';
+  const duration = '2h 15m';
 
   return (
     <ScrollView style={styles.container} bounces={false}>
@@ -261,17 +317,21 @@ const MovieDetailScreen = ({ route }) => {
           style={styles.bannerImage}
           resizeMode="cover"
         >
-          <View style={styles.bannerOverlay}>
+          <LinearGradient
+            colors={['transparent', 'rgba(15, 23, 30, 0.8)', 'rgba(15, 23, 30, 1)']}
+            style={styles.bannerOverlay}
+          >
             <View style={styles.movieInfo}>
               <Text style={styles.title}>{movie.title}</Text>
               <View style={styles.metaInfo}>
-                <Text style={styles.matchText}>{matchPercentage}% Match</Text>
                 <Text style={styles.metaText}>{releaseYear}</Text>
+                <Text style={styles.metaDot}>•</Text>
                 <Text style={styles.metaText}>{rating}</Text>
+                <Text style={styles.metaDot}>•</Text>
                 <Text style={styles.metaText}>{duration}</Text>
               </View>
             </View>
-          </View>
+          </LinearGradient>
         </ImageBackground>
       </View>
 
@@ -307,36 +367,23 @@ const MovieDetailScreen = ({ route }) => {
       </View>
 
       {/* My List Section */}
-      <View style={styles.similarContent}>
-        <View style={styles.sectionHeader}>
+      {watchlistMovies.length > 0 && (
+        <View style={styles.similarContent}>
           <Text style={styles.sectionTitle}>My List</Text>
-          <TouchableOpacity onPress={refreshWatchlist}>
-            <Ionicons name="refresh" size={24} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-        </View>
-        {watchlistMovies.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {watchlistMovies.map((watchlistMovie) => (
-              <TouchableOpacity 
-                key={watchlistMovie.id} 
-                style={styles.similarItem}
+              <MovieItem
+                key={watchlistMovie.id}
+                movie={watchlistMovie}
                 onPress={() => {
                   navigation.push('MovieDetail', { movieId: watchlistMovie.id });
                 }}
-              >
-                <Image
-                  source={{ uri: watchlistMovie.poster_path }}
-                  style={styles.similarImage}
-                  resizeMode="cover"
-                />
-                <Text style={styles.similarTitle}>{watchlistMovie.title}</Text>
-              </TouchableOpacity>
+                style={styles.similarItem}
+              />
             ))}
           </ScrollView>
-        ) : (
-          <Text style={styles.noContentText}>No movies in your watchlist yet</Text>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Similar Content */}
       {similarMovies.length > 0 && (
@@ -344,20 +391,14 @@ const MovieDetailScreen = ({ route }) => {
           <Text style={styles.sectionTitle}>More Like This</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {similarMovies.map((similar) => (
-              <TouchableOpacity 
-                key={similar.id} 
-                style={styles.similarItem}
+              <MovieItem
+                key={similar.id}
+                movie={similar}
                 onPress={() => {
                   navigation.push('MovieDetail', { movieId: similar.id });
                 }}
-              >
-                <Image
-                  source={{ uri: similar.poster_path }}
-                  style={styles.similarImage}
-                  resizeMode="cover"
-                />
-                <Text style={styles.similarTitle}>{similar.title}</Text>
-              </TouchableOpacity>
+                style={styles.similarItem}
+              />
             ))}
           </ScrollView>
         </View>
@@ -373,14 +414,18 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     height: SCREEN_HEIGHT * 0.5,
+    position: 'relative',
   },
   bannerImage: {
     width: '100%',
     height: '100%',
   },
   bannerOverlay: {
-    flex: 1,
-    background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.9) 100%)',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '100%',
     justifyContent: 'flex-end',
     padding: theme.spacing.lg,
   },
@@ -392,20 +437,23 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize['3xl'],
     fontWeight: 'bold',
     marginBottom: theme.spacing.sm,
+    textShadow: '0px 2px 4px rgba(0, 0, 0, 0.5)',
   },
   metaInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  matchText: {
-    color: theme.colors.success,
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: 'bold',
+    marginTop: theme.spacing.sm,
   },
   metaText: {
     color: theme.colors.text.secondary,
     fontSize: theme.typography.fontSize.md,
+    textShadow: '0px 1px 2px rgba(0, 0, 0, 0.5)',
+  },
+  metaDot: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.fontSize.md,
+    marginHorizontal: theme.spacing.xs,
+    textShadow: '0px 1px 2px rgba(0, 0, 0, 0.5)',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -424,21 +472,6 @@ const styles = StyleSheet.create({
   },
   playButtonText: {
     color: theme.colors.background.primary,
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: 'bold',
-  },
-  myListButton: {
-    flex: 1,
-    backgroundColor: theme.colors.background.secondary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-    gap: theme.spacing.sm,
-  },
-  myListButtonText: {
-    color: theme.colors.text.primary,
     fontSize: theme.typography.fontSize.md,
     fontWeight: 'bold',
   },
@@ -542,17 +575,57 @@ const styles = StyleSheet.create({
   headerLogo: {
     fontSize: 20,
   },
-  noContentText: {
-    color: theme.colors.text.secondary,
-    fontSize: theme.typography.fontSize.md,
-    marginTop: theme.spacing.md,
-    marginLeft: theme.spacing.lg,
-  },
-  sectionHeader: {
+  myListButton: {
+    flex: 1,
+    backgroundColor: theme.colors.background.secondary,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    justifyContent: 'center',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    gap: theme.spacing.sm,
+  },
+  myListButtonText: {
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: 'bold',
+  },
+  movieItemContainer: {
+    width: 140,
+    marginRight: theme.spacing.md,
+    cursor: 'pointer',
+  },
+  movieItemInner: {
+    position: 'relative',
+    borderRadius: theme.borderRadius.sm,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.background.card,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  movieItemOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 30, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.sm,
+  },
+  movieItemContent: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  movieItemTitle: {
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
