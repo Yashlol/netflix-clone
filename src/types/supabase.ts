@@ -1,11 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 
+// Debug: Ensure environment variables are loaded
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error("⚠️ Supabase environment variables are missing! Check your .env file.");
+}
+
+// Initialize Supabase client
 export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
+  SUPABASE_URL!,
+  SUPABASE_ANON_KEY!,
   {
     auth: {
+      storage: AsyncStorage,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
@@ -13,6 +21,25 @@ export const supabase = createClient(
   }
 );
 
+// Debug: Check session data
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error("🚨 Error fetching session:", error);
+  } else {
+    console.log("✅ Current session data:", data);
+  }
+});
+
+// Alternative: Fetch user details instead of session
+export const getUserProfile = async () => {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error("🚨 Error fetching user:", error);
+  }
+  return data?.user || null;
+};
+
+// Type Definitions
 export type Profile = {
   id: string;
   user_id: string;
