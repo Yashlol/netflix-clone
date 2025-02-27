@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase';
-import { ContinueWatching } from '../types/supabase';
+import { supabase,ContinueWatching } from '../types/supabase';
 
 export const continueWatchingService = {
   async getContinueWatching(userId: string, profileId: string): Promise<ContinueWatching[]> {

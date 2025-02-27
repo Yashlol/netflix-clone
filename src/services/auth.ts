@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase';
-import { UserProfile, Profile } from '../types/supabase';
+import { supabase, UserProfile, Profile } from '../types/supabase';
 
 export const authService = {
   // Sign up with email and password

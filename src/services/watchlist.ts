@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase';
-import { WatchList } from '../types/supabase';
+import { supabase, WatchList } from '../types/supabase';
 
 export const watchlistService = {
   /**
