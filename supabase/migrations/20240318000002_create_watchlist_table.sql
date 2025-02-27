@@ -1,41 +1,40 @@
--- Create watchlist table
-create table if not exists watchlist (
-    id uuid default uuid_generate_v4() primary key,
-    user_id uuid references auth.users(id) not null,
-    profile_id uuid references profiles(id) not null,
-    movie_id integer not null,
-    added_at timestamp with time zone default timezone('utc'::text, now()) not null
+-------------------------------------------------
+-- Create the watchlist table
+-------------------------------------------------
+CREATE TABLE IF NOT EXISTS watchlist (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    movie_id INTEGER NOT NULL,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Create indexes
-create index if not exists watchlist_user_id_idx on watchlist(user_id);
-create index if not exists watchlist_profile_id_idx on watchlist(profile_id);
-create index if not exists watchlist_movie_id_idx on watchlist(movie_id);
+-- Create indexes for watchlist
+CREATE INDEX IF NOT EXISTS watchlist_user_id_idx ON watchlist(user_id);
+CREATE INDEX IF NOT EXISTS watchlist_profile_id_idx ON watchlist(profile_id);
+CREATE INDEX IF NOT EXISTS watchlist_movie_id_idx ON watchlist(movie_id);
 
--- Create unique constraint to prevent duplicate entries
-create unique index if not exists watchlist_unique_movie_idx 
-    on watchlist(user_id, profile_id, movie_id);
+-- Create a unique index to prevent duplicate watchlist entries
+CREATE UNIQUE INDEX IF NOT EXISTS watchlist_unique_movie_idx 
+    ON watchlist(user_id, profile_id, movie_id);
 
--- Enable RLS
-alter table watchlist enable row level security;
+-- Enable Row Level Security (RLS) for watchlist
+ALTER TABLE watchlist ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-drop policy if exists "Users can view their own watchlist" on watchlist;
-drop policy if exists "Users can insert into their own watchlist" on watchlist;
-drop policy if exists "Users can delete from their own watchlist" on watchlist;
+-- Drop existing policies for watchlist (if any)
+DROP POLICY IF EXISTS "Users can view their own watchlist" ON watchlist;
+DROP POLICY IF EXISTS "Users can insert into their own watchlist" ON watchlist;
+DROP POLICY IF EXISTS "Users can delete from their own watchlist" ON watchlist;
 
--- Create policies
-create policy "Users can view their own watchlist"
-    on watchlist for select
-    using (auth.uid() = user_id);
+-- Create RLS policies for watchlist
+CREATE POLICY "Users can view their own watchlist"
+    ON watchlist FOR SELECT
+    USING (auth.uid() = user_id);
 
-create policy "Users can insert into their own watchlist"
-    on watchlist for insert
-    with check (auth.uid() = user_id);
+CREATE POLICY "Users can insert into their own watchlist"
+    ON watchlist FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
 
-create policy "Users can delete from their own watchlist"
-    on watchlist for delete
-    using (auth.uid() = user_id);
-
-create unique index if not exists watchlist_unique_movie_idx 
-    on watchlist(user_id, profile_id, movie_id);
+CREATE POLICY "Users can delete from their own watchlist"
+    ON watchlist FOR DELETE
+    USING (auth.uid() = user_id);

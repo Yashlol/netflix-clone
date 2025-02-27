@@ -1,35 +1,39 @@
--- Create profiles table
-create table if not exists profiles (
-    id uuid default uuid_generate_v4() primary key,
-    user_id uuid references auth.users(id) not null,
-    username text not null,
-    avatar_url text,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    -- Add constraints
-    constraint username_length check (char_length(username) >= 3)
+-- Enable the uuid-ossp extension for UUID generation (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-------------------------------------------------
+-- Create the profiles table
+-------------------------------------------------
+CREATE TABLE IF NOT EXISTS profiles (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    username TEXT NOT NULL,
+    avatar_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT username_length CHECK (char_length(username) >= 3)
 );
 
--- Create indexes
-create index if not exists profiles_user_id_idx on profiles(user_id);
-create index if not exists profiles_username_idx on profiles(username);
+-- Create indexes for profiles
+CREATE INDEX IF NOT EXISTS profiles_user_id_idx ON profiles(user_id);
+CREATE INDEX IF NOT EXISTS profiles_username_idx ON profiles(username);
 
--- Enable RLS
-alter table profiles enable row level security;
+-- Enable Row Level Security (RLS) for profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-drop policy if exists "Users can view their own profiles" on profiles;
-drop policy if exists "Users can insert their own profiles" on profiles;
-drop policy if exists "Users can update their own profiles" on profiles;
+-- Drop existing policies for profiles (if any)
+DROP POLICY IF EXISTS "Users can view their own profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profiles" ON profiles;
 
--- Create policies
-create policy "Users can view their own profiles"
-    on profiles for select
-    using (auth.uid() = user_id);
+-- Create RLS policies for profiles
+CREATE POLICY "Users can view their own profiles"
+    ON profiles FOR SELECT
+    USING (auth.uid() = user_id);
 
-create policy "Users can insert their own profiles"
-    on profiles for insert
-    with check (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own profiles"
+    ON profiles FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
 
-create policy "Users can update their own profiles"
-    on profiles for update
-    using (auth.uid() = user_id);
+CREATE POLICY "Users can update their own profiles"
+    ON profiles FOR UPDATE
+    USING (auth.uid() = user_id);
