@@ -186,9 +186,11 @@ const MovieDetailScreen = ({ route }) => {
         setLoading(true);
         setError(null);
 
-        if (!navigator.onLine) {
-          throw new Error('No internet connection. Please check your network and try again.');
-        }
+        console.log('Navigator:', navigator);
+
+        // if (!navigator.onLine) {
+        //   throw new Error('No internet connection. Please check your network and try again.');
+        // }
 
         const [movieData, similarMoviesData] = await Promise.all([
           movieService.getMovieDetails(movieId),
@@ -294,13 +296,20 @@ const MovieDetailScreen = ({ route }) => {
         <Text style={styles.errorText}>Error: {error}</Text>
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Home'); // Or any safe screen
+            }
+          }}
         >
           <Text style={styles.buttonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
+  
 
   if (!movie) return null;
 

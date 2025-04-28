@@ -1,18 +1,22 @@
-import { TMDB_API_KEY } from '@env';
+// import { TMDB_API_KEY } from '../../.env';
 import { API_CONFIG } from '../constants/api';
 import { Movie } from '../types/supabase';
 import * as Network from 'expo-network';
 
 const BASE_URL = API_CONFIG.TMDB.BASE_URL;
 const IMAGE_BASE_URL = API_CONFIG.TMDB.IMAGE_BASE_URL;
+const TMDB_API_KEY =API_CONFIG.TMDB.TMDB_API_KEY
+
+// console.log('TMDB_API_KEY:', TMDB_API_KEY);
 
 const handleApiError = async (error: any, customMessage: string) => {
   console.error(`${customMessage}:`, error);
 
   const networkState = await Network.getNetworkStateAsync();
-  if (!networkState.isConnected) {
-    throw new Error('No internet connection. Please check your network and try again.');
-  }
+  console.log('Network state:', networkState);
+  // if (!networkState.isConnected) {
+  //   throw new Error('No internet connection. Please check your network and try again.');
+  // }
 
   if (error.response) {
     throw new Error(`API Error: ${error.response.status} - ${error.response.statusText}`);
@@ -39,10 +43,10 @@ export const movieService = {
         overview: data.overview,
         poster_path: data.poster_path
           ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.POSTER}${data.poster_path}`
-          : null,
+          : "",
         backdrop_path: data.backdrop_path
           ? `${IMAGE_BASE_URL}/${API_CONFIG.TMDB.IMAGE_SIZES.BACKDROP}${data.backdrop_path}`
-          : null,
+          : "",
         release_date: data.release_date,
         vote_average: data.vote_average,
         genre_ids: data.genres.map((genre: any) => genre.id),

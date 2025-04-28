@@ -2,6 +2,7 @@ export const API_CONFIG = {
   TMDB: {
     BASE_URL: 'https://api.themoviedb.org/3',
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
+    TMDB_API_KEY: "f3dbd6fe119fb1353c1205a778472479 ",
     ENDPOINTS: {
       TRENDING: '/trending/all/week',
       MOVIES: '/discover/movie',
